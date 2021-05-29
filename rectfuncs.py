@@ -2,13 +2,22 @@ import cv2
 import numpy as np
 
 
+def rect_side_len(arr):
+    side_len = list()
+    for i in range(len(arr)):
+        xSquared = np.power((arr[i][0][0] - arr[0 if i == len(arr)-1 else i+1][0][0]), 2)
+        ySquared = np.power((arr[i][0][1] - arr[0 if i == len(arr)-1 else i+1][0][1]), 2)
+        side_len.append(int(np.round(np.sqrt((xSquared+ySquared)))))
+    return side_len
+
+
 def detLen(pts0, pts1):
     xSquared = np.power((pts1[0]-pts0[0]), 2)
     ySquared = np.power((pts1[1]-pts0[1]), 2)
     return np.sqrt((xSquared+ySquared))
 
 
-def getSecondImage(imageBIN, imageRAW, areaUpper=150000, areaLower=40000):
+def getSecondImage(imageBIN, imageRAW, areaLower=40000, areaUpper=150000):
 
     kernel = np.ones((5, 5))
     imageDiluted = cv2.dilate(imageBIN, kernel, iterations=1)
