@@ -1,40 +1,27 @@
 import cv2
-import numpy as np
-from math import isclose
-from rectfuncs import rect_side_len
+import rectfuncs
 
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 cap.set(cv2.CAP_PROP_FRAME_COUNT, 30)
+cla = rectfuncs.rectangle_Mission()
 
 while cap.isOpened():
     ret, frame = cap.read()
+    frame = frame[120:600, 280:1000]
+    centerCoord = [int(frame.shape[1]/2), int(frame.shape[0]/2)]
+    frameCircumference = (int(frame.shape[1]/2) + int(frame.shape[0]/2))*2
 
-    blurred = cv2.GaussianBlur(frame, (5, 5), 1)
-    canny = cv2.Canny(blurred, 120, 180)
+    coordinates, angle, rectCircumference = cla.findRectCenter(frame)
 
-    kernel = np.ones((5, 5))
-    imageDiluted = cv2.dilate(canny, kernel, iterations=1)
-
-    contours, hierarchy = cv2.findContours(imageDiluted, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    if contours is not None:
-        for idx, cnt in enumerate(contours):
-            drawFlag = False
-            area = cv2.contourArea(cnt)
-            if 5000 < area < 500000:
-                poly_approx = cv2.approxPolyDP(cnt, 0.02*cv2.arcLength(cnt, True), True)
-                if len(poly_approx) == 4:
-                    side_len = rect_side_len(poly_approx)
-                    if isclose(side_len[0], side_len[2], rel_tol=0.1) and\
-                            isclose(side_len[1], side_len[3], rel_tol=0.1) and\
-                            isclose(min(side_len[0],side_len[1])*2, max(side_len[0],side_len[1]), rel_tol=0.10):
-                        drawFlag = True
-                        #TODO find angle of long side
-            if drawFlag:
-                cv2.drawContours(frame, contours, idx, (0, 255, 255), 2)
+    if (coordinates[0] and coordinates[1] and angle) is not None:
+        flag = cla.createMotion(coordinates, centerCoord, angle, frameCircumference, rectCircumference, tol=0.15) # TODO Complete motion function
+        if flag:
+            cv2.circle(frame,(coordinates[0], coordinates[1]), 10, (0, 255, 0), cv2.FILLED) # This draws coord to image
+        else:
+            cv2.circle(frame, (coordinates[0], coordinates[1]), 10, (123, 0, 255), cv2.FILLED)  # This draws coord to image
 
     cv2.imshow("Original", frame)
     if cv2.waitKey(1) == ord('q'):
